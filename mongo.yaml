@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongo-deployment
+  labels:
+    app: mongo
+spec:
+  replicas: 1
+  # This Deployment belongs to which pods ?
+  # Get all Pods with label "app:nginx"
+  selector:
+    # This app: nginx will be matched with one in template section
+    matchLabels:
+      app: mongo
+  # This template section is for pods    
+  template:
+    metadata:
+      labels:
+        app: mongo
+    spec:
+      containers:
+      # Create pods with mongo:8.0.0-rc20 image
+      - name: mongodb
+        image: mongo:5.0
+        ports:
+        - containerPort: 27017
+        env:
+        - name: MONGO_INITDB_ROOT_USERNAME
+          valueFrom: 
+            secretKeyRef:
+              name: mongo-secret
+              key: mongo-user 
+        - name: MONGO_INITDB_ROOT_PASSWORD
+          valueFrom: 
+            secretKeyRef:
+              name: mongo-secret
+              key: mongo-password 
+
+# we have multiple config in one yaml file separated by ---
+---
+# defining service config here
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo-service
+spec:
+  # How will the service know which pods belong to it
+  # using label in selector
+  selector:
+    app: mongo
+  ports:
+    - protocol: TCP
+      port: 80
+      # Servoce should fwd request to below port on which pods are up
+      targetPort: 27017
